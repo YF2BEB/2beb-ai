@@ -1,39 +1,38 @@
-import { NextResponse } from 'next/server';
+import { OpenAI } from "openai";
 
-const systemPrompts: Record<string, string> = {
-  "avatar": "Kamu adalah AI pembuat deskripsi avatar realistis.",
-  "konten-viral": "Buat konten viral dengan gaya storytelling yang catchy dan powerful.",
-  "iklan-produk": "Buat iklan produk yang persuasif dan jelas.",
-  "iklan-jasa": "Tulis copywriting untuk jasa atau layanan digital.",
-  "ebook": "Buat konsep atau isi ebook yang menarik dan informatif.",
-  "lagu": "Buat lirik lagu dalam gaya populer.",
-  "avatar-tersimpan": "Berikan daftar avatar yang sudah dibuat.",
-  "riwayat": "Berikan riwayat prompt sebelumnya."
-};
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 export async function POST(req: Request) {
-  const { prompt } = await req.json();
-  const { searchParams } = new URL(req.url);
-  const feature = searchParams.get('feature') || 'konten-viral';
-  const system = systemPrompts[feature] || 'Kamu adalah AI prompt generator.';
+  try {
+    const { prompt } = await req.json();
 
-  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-4",
+    if (!prompt || prompt.trim().length === 0) {
+      return Response.json({ result: "Prompt kosong atau tidak valid." });
+    }
+
+    const chat = await openai.chat.completions.create({
+      model: "gpt-4", // atau gpt-3.5-turbo jika ingin cepat
       messages: [
-        { role: "system", content: system },
-        { role: "user", content: prompt }
+        {
+          role: "system",
+          content: "Kamu adalah AI kreatif untuk membuat avatar, iklan, konten viral, ebook, lagu, dsb."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
       ],
-      temperature: 0.9
-    })
-  });
+      temperature: 0.8,
+      max_tokens: 1000
+    });
 
-  const data = await openaiRes.json();
-  const result = data.choices?.[0]?.message?.content || "Gagal mendapatkan hasil dari OpenAI.";
-  return NextResponse.json({ result });
+    const result = chat.choices[0]?.message?.content;
+    return Response.json({ result });
+
+  } catch (error: any) {
+    console.error("❌ Error from OpenAI:", error);
+    return Response.json({ result: `Gagal: ${error?.message || "Terjadi kesalahan."}` });
+  }
 }
