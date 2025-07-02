@@ -1,3 +1,3 @@
-# 2BEB Refined Prompt Generator
+# 2BEB Ai
 
-Generate AI-friendly prompts from raw descriptions.
+Auto-deploy ready. Powered by Next.js 14, TailwindCSS, and OpenAI API.
